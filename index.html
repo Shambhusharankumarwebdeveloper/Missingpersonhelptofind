@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Missing Person Alert - Vadodara</title>
+<style>
+:root{--bg:#fff;--fg:#1b1b1b;--card:#f5f5f4;--bd:#d6d3d1;--ac:#b91c1c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171717;--fg:#f5f5f4;--card:#262626;--bd:#404040;--ac:#f87171}}
+body{background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif;margin:0;padding:16px;max-width:720px;margin-inline:auto;line-height:1.4}
+h1{font-size:1.3rem;color:var(--ac);margin:4px 0 10px}h2{font-size:1.05rem;margin:18px 0 6px}
+label{display:block;font-size:.85rem;margin-top:10px}
+input,textarea,select{width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--fg);font:inherit}
+input[type=checkbox]{width:auto}
+button,a.b{display:inline-block;padding:9px 13px;border-radius:6px;border:0;background:var(--ac);color:#fff;text-decoration:none;font-size:.9rem;cursor:pointer;margin:3px 4px 3px 0}
+button.g{background:#15803d}button.c,a.c{background:#475569}
+#steps{display:flex;gap:6px;margin-bottom:8px}#steps button{flex:1;background:var(--card);color:var(--fg);border:1px solid var(--bd);margin:0}
+#steps button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+pre{white-space:pre-wrap;background:var(--card);border:1px solid var(--bd);padding:10px;border-radius:6px;font:inherit;font-size:.85rem}
+#thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}#thumbs div{width:48%;max-width:220px}#thumbs img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:8px;border:2px solid var(--ac)}
+.ag{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:10px;margin:8px 0}.ag.done{border-color:#15803d;opacity:.8}
+.ag small{display:block;opacity:.7}.ag input[type=email]{margin:6px 0}
+.chk{display:flex;gap:8px;align-items:center;margin:0;font-size:1rem}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#prog{font-weight:600;color:#15803d}
+</style><script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script></head><body>
+<h1>Missing Person Alert</h1>
+<div id="note" hidden style="position:sticky;top:0;z-index:9;background:var(--card);border:2px solid var(--ac);border-radius:8px;padding:10px;margin-bottom:8px;font-size:.9rem"></div>
+<div id="steps"><button id="b1" onclick="show(1)">1. Details</button><button id="b2" onclick="show(2)">2. Photos</button><button id="b3" onclick="show(3)">3. Send</button></div>
+
+<section id="s1">
+<p><small>First file a missing person report with the police (dial 112) and enter the report number below. Everything you type is saved on this device.</small></p>
+<div id="form"></div>
+<p><button onclick="next1()">Next: Photos</button> <button class="c" onclick="clearAll()">Clear saved data</button></p>
+</section>
+
+<section id="s2" hidden>
+<h2>Photos (face + full body, clear and recent)</h2>
+<p><small>Each photo is shrunk to under 1 MB automatically. Photos are not saved: choose them again if you reopen the page.</small></p>
+<input id="photos" type="file" accept="image/*" multiple>
+<div id="thumbs"></div>
+<p><button onclick="sharePh()">Share photo + message</button> <button onclick="show(1)" class="c">Back</button> <button onclick="show(3)">Next: Send</button></p>
+</section>
+
+<section id="s3" hidden>
+<h2>Message to send</h2>
+<pre id="msg"></pre>
+<button onclick="copyMsg()">Copy message</button> <span id="ok"></span>
+<p><small>Links can send text only. Attach the saved photo in each chat or email with the clip icon.</small></p>
+
+<div id="srv" hidden><h2>Email all agencies automatically</h2>
+<p><small>Server mode: sends one email to every agency email below, with your photos attached, using your Gmail account.</small></p>
+<button class="g" onclick="emailAll()">Email all agencies now</button> <span id="srvst"></span>
+<div id="srvres"></div></div>
+
+<h2>Agencies <span id="prog"></span></h2>
+<label>Open WhatsApp with<select id="wam" onchange="S.m=this.value;S.mset=1;save()"><option value="me">wa.me link (recommended)</option><option value="app">WhatsApp app (phone)</option><option value="web">WhatsApp Web (computer)</option></select></label>
+<p><button class="g" onclick="nextUnsent()">Send to next unsent agency</button> <button class="c" onclick="resetSent()">Reset sent marks</button> <button class="c" onclick="waTest()">Test on my own number</button></p>
+<div id="ag"></div>
+
+<h2>Add another agency</h2>
+<div class="row"><input id="nn" placeholder="Name"><input id="np" placeholder="WhatsApp number"></div>
+<input id="ne" type="email" placeholder="Email (optional)" style="margin-top:6px">
+<p><button class="c" onclick="addAg()">Add agency</button></p>
+<p><button class="c" onclick="show(2)">Back</button></p>
+</section>
+
+<script>
+const $=i=>document.getElementById(i);
+const FRAMED=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+const MOBILE=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Macintosh/i.test(navigator.userAgent));
+let nt;function note(t,keep){const n=$("note");n.textContent=t;n.hidden=false;clearTimeout(nt);if(!keep)nt=setTimeout(()=>n.hidden=true,9000)}
+function linkBox(u,w){w=w||"WhatsApp";const n=$("note");n.hidden=false;clearTimeout(nt);n.innerHTML="<b>"+w+" cannot open inside this preview.</b> Copy this link, paste it in Chrome or Safari, then press Enter:<input readonly id='lnk' style='margin-top:6px'><button class='c' onclick=\"$('lnk').select();document.execCommand('copy')\">Copy</button>";$("lnk").value=u;$("lnk").select();try{navigator.clipboard.writeText(u).catch(()=>{})}catch(e){}}
+const F=[["name","Name"],["age","Age"],["gender","Gender"],["height","Height / build"],["weight","Weight (approx.)"],["hair","Hair / complexion"],["clothes","Clothes when last seen"],["marks","Marks, health, language spoken"],["aids","Glasses / hearing aid / walking stick / dentures"],["medical","Medical condition and medicines (e.g. memory loss, diabetes)"],["place","Last seen place"],["when","Date and time last seen"],["address","Home address"],["cname","Contact person"],["cphone","Contact phone"],["altphone","Alternate contact (name + phone)"],["fir","Police report no. / station"]];
+const D=[["Swarg Golden Age Care Foundation","916353532050","care@swargcommunitycare.org"],["Swarg Community Care","918511666664","care@swargcommunitycare.org"],["Atman Care Home","918799681423","info@atmancarehome.com"],["Welcare Vatsalya","919327469784",""],["Mayur Care Home","919586493470",""],["CaringLife Home Healthcare","917698917288",""],["Guru Krupa Home Care Taker Agency","919725720647",""],["Shreeji Caretaker Services","919510215849",""]];
+const K="missingAlertV2";
+let S={f:{},ag:D.map(([n,p,e])=>({n,p,e,sent:false})),m:MOBILE?"app":"me"};
+try{const d=JSON.parse(localStorage.getItem(K)||"null");if(d)S=Object.assign(S,d)}catch(e){}
+if(S.m==="app"&&!S.mset)S.m="me";
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const g=k=>(S.f[k]||"").trim()||"____";
+const opt=(l,k)=>(S.f[k]||"").trim()?l+": "+S.f[k].trim()+"\n":"";
+function build(){return `MISSING PERSON - URGENT\n\nName: ${g("name")}\nAge/Gender: ${g("age")} / ${g("gender")}\nHeight/build: ${g("height")}\n${opt("Weight","weight")}${opt("Hair/complexion","hair")}Clothes: ${g("clothes")}\nMarks/health/language: ${g("marks")}\n${opt("Glasses/aids","aids")}${opt("Medical condition/medicines","medical")}\nLast seen: ${g("place")} on ${g("when")}\n${opt("Home address","address")}${opt("Alternate contact","altphone")}Police report: ${g("fir")}\n\nIf this person has come to your home or you have any information, please contact ${g("cname")} at ${g("cphone")} or the police (112) immediately. Please keep the person safe and share this with your staff. Photo attached.`}
+function msg(){$("msg").textContent=build()}
+$("form").innerHTML=F.map(([k,l])=>`<label>${l}<input id="f_${k}"></label>`).join("");
+F.forEach(([k])=>{const el=$("f_"+k);el.value=S.f[k]||"";el.oninput=()=>{S.f[k]=el.value;save();msg()}});
+function show(n){if(n>1&&!(S.f.name||"").trim()){note("Enter the person's name first.");n=1}[1,2,3].forEach(i=>{$("s"+i).hidden=i!==n;$("b"+i).className=i===n?"on":""});if(n===3){msg();agents()}window.scrollTo(0,0)}
+function next1(){if(!(S.f.name||"").trim()||!(S.f.cphone||"").trim()){note("Enter the person's name and a contact phone number.");return}show(2)}
+function clearAll(){if(!FRAMED&&!confirm("Delete all saved details?"))return;try{localStorage.removeItem(K)}catch(e){}location.reload()}
+
+let photos=[];
+function shrink(f,max=1000000){return new Promise(res=>{if(f.size<=max&&/jpe?g/i.test(f.type))return res(f);const im=new Image();im.onload=()=>{const s=Math.min(1,1600/Math.max(im.width,im.height));const go=(w,h,q)=>{const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(im,0,0,w,h);c.toBlob(b=>{if(!b)return res(f);if(b.size<=max||w<400)return res(new File([b],f.name.replace(/\.\w+$/,"")+".jpg",{type:"image/jpeg"}));if(q>0.45)go(w,h,q-0.1);else go(Math.round(w*0.85),Math.round(h*0.85),0.7)},"image/jpeg",q)};go(Math.round(im.width*s),Math.round(im.height*s),0.85)};im.onerror=()=>{if(window.heic2any&&(/hei[cf]/i.test(f.type)||/\.hei[cf]$/i.test(f.name)))heic2any({blob:f,toType:"image/jpeg",quality:0.8}).then(b=>{const bb=Array.isArray(b)?b[0]:b;shrink(new File([bb],f.name.replace(/\.\w+$/,"")+".jpg",{type:"image/jpeg"})).then(res)}).catch(()=>res(null));else res(null)};im.src=URL.createObjectURL(f)})}
+$("photos").addEventListener("change",async e=>{const t=$("thumbs");t.textContent="Compressing...";const all=[...e.target.files].slice(0,4);photos=(await Promise.all(all.map(shrink))).filter(Boolean);t.innerHTML="";if(photos.length<all.length){const w=document.createElement("p");w.style.color="var(--ac)";w.textContent=(all.length-photos.length)+" photo(s) could not be read (HEIC or unsupported). Choose a JPG or PNG.";t.appendChild(w)}photos.forEach(f=>{const d=document.createElement("div"),i=new Image();i.src=URL.createObjectURL(f);d.appendChild(i);const s=document.createElement("small");s.textContent=Math.round(f.size/1024)+" KB";d.appendChild(s);const a=document.createElement("a");a.href=i.src;a.download=f.name;a.textContent="  Save photo";d.appendChild(a);t.appendChild(d)})});
+async function sharePh(){if(!photos.length){note("Choose a photo first.");return}try{if(navigator.canShare&&navigator.canShare({files:photos})){await navigator.share({files:photos,text:build(),title:"Missing Person"});return}}catch(e){if(e.name==="AbortError")return}note("Photo sharing needs a phone browser on a secure page. Tap Save photo, then attach it in the chat or email with the clip icon.")}
+
+function copyMsg(){navigator.clipboard.writeText(build()).then(()=>{$("ok").textContent="Copied";setTimeout(()=>$("ok").textContent="",1500)}).catch(()=>{})}
+function go(u){let w=null;try{w=window.open(u,"_blank")}catch(e){}if(!w)location.href=u}
+function mt(i){const a=S.ag[i];const e=(a.e||"").trim();a.sent=true;save();location.href="mailto:"+encodeURIComponent(e).replace(/%40/g,"@")+"?subject="+encodeURIComponent("URGENT: Missing person - "+g("name"))+"&body="+encodeURIComponent(build());agents()}
+function waUrl(p){const t=encodeURIComponent(build());return S.m==="web"?"https://web.whatsapp.com/send?phone="+p+"&text="+t:S.m==="app"?"whatsapp://send?phone="+p+"&text="+t:"https://wa.me/"+p+"?text="+t}
+function wa(i){const a=S.ag[i];const base="https://wa.me/"+a.p+"?text="+encodeURIComponent(build());if(FRAMED){linkBox(base);return}const u=waUrl(a.p);a.sent=true;save();if(u.indexOf("whatsapp:")===0){location.href=u;setTimeout(()=>{if(document.visibilityState==="visible")location.href=base},1500);agents();return}let w=null;try{w=window.open(u,"_blank")}catch(e){}if(!w){go(base);}agents()}
+function gm(i){const a=S.ag[i];const e=(a.e||"").trim();const sub="URGENT: Missing person - "+g("name");const u="https://mail.google.com/mail/?view=cm&fs=1"+(e?"&to="+encodeURIComponent(e):"")+"&su="+encodeURIComponent(sub)+"&body="+encodeURIComponent(build());if(FRAMED){linkBox(u,"Gmail");return}a.sent=true;save();if(MOBILE)location.href="mailto:"+e+"?subject="+encodeURIComponent(sub)+"&body="+encodeURIComponent(build());else go(u);agents()}
+function mark(i,v){S.ag[i].sent=v;save();agents()}
+function waTest(){let p=(S.f.cphone||"").replace(/\D/g,"");if(p.length===10)p="91"+p;if(p.length<10){note("Enter your contact phone in step 1 first.");return}const u="https://wa.me/"+p+"?text="+encodeURIComponent(build());if(FRAMED){linkBox(u);return}go(u)}
+function nextUnsent(){const i=S.ag.findIndex(a=>!a.sent);if(i<0){note("All agencies are marked as sent.");return}wa(i)}
+function resetSent(){S.ag.forEach(a=>a.sent=false);save();agents()}
+function addAg(){const n=$("nn").value.trim();let p=$("np").value.replace(/\D/g,"");if(p.length===10)p="91"+p;if(!n||p.length<10){note("Enter a name and a valid number.");return}S.ag.push({n,p,e:$("ne").value.trim(),sent:false});["nn","np","ne"].forEach(x=>$(x).value="");save();agents()}
+function agents(){$("wam").value=S.m;$("ag").innerHTML=S.ag.map((a,i)=>`<div class="ag${a.sent?" done":""}"><label class="chk"><input type="checkbox" ${a.sent?"checked":""} onchange="mark(${i},this.checked)"><b>${esc(a.n)}</b></label><small>+${esc(a.p)}${a.sent?" - marked sent":""}</small><button class="g" onclick="wa(${i})">WhatsApp</button><button class="c" onclick="navigator.clipboard.writeText('https://wa.me/${esc(a.p)}?text='+encodeURIComponent(build())).catch(()=>{});note('WhatsApp link copied. Paste it into the address bar of your normal browser, then press Enter.')">Copy link</button><button class="c" onclick="copyMsg();note('Message copied. Open WhatsApp, search +${esc(a.p)}, paste and send.')">Copy msg</button><a class="b c" href="tel:+${esc(a.p)}">Call</a><button onclick="gm(${i})">Gmail</button><button class="c" onclick="mt(${i})">Mail app</button><input type="email" placeholder="agency email (add if you have it)" value="${esc(a.e||"")}" onchange="S.ag[${i}].e=this.value;save()"></div>`).join("");$("prog").textContent="("+S.ag.filter(a=>a.sent).length+" of "+S.ag.length+" sent)"}
+let SERVER=false,SEM=false;
+async function ping(){try{const r=await fetch("/api/ping");const j=await r.json();SERVER=!!j.ok;SEM=!!j.email}catch(e){SERVER=false}$("srv").hidden=!SERVER;if(SERVER&&!SEM)$("srvst").textContent="Gmail not set up on the server yet (see README)."}
+const b64=f=>new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result.split(",")[1]);x.readAsDataURL(f)});
+async function emailAll(){const list=S.ag.map((a,i)=>({i,e:(a.e||"").trim()})).filter(x=>x.e);if(!list.length){note("Add at least one agency email in the cards first.");return}
+$("srvst").textContent="Sending...";const ph=[];for(const f of photos)ph.push({name:f.name,type:f.type||"image/jpeg",data:await b64(f)});
+try{const r=await fetch("/api/email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({emails:[...new Set(list.map(x=>x.e))],subject:"URGENT: Missing person - "+g("name"),body:build(),photos:ph})});const j=await r.json();if(!r.ok){$("srvst").textContent=j.error||"Failed";return}
+const okset=new Set(j.results.filter(x=>x.ok).map(x=>x.to));list.forEach(x=>{if(okset.has(x.e))S.ag[x.i].sent=true});save();agents();
+$("srvst").textContent=okset.size+" of "+j.results.length+" emails sent";$("srvres").innerHTML=j.results.map(x=>"<small>"+(x.ok?"Sent: ":"FAILED: ")+esc(x.to)+(x.error?" - "+esc(x.error):"")+"</small><br>").join("")}catch(e){$("srvst").textContent="Server not reachable. Is server.py running?"}}
+ping();
+show(1);
+</script></body></html>
